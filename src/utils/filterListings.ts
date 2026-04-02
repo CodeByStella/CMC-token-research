@@ -1,0 +1,31 @@
+import type { CmcListing } from '../types/cmc'
+
+export interface ClientFilterOptions {
+  text: string
+  minMcap: number | undefined
+  maxMcap: number | undefined
+  minVol: number | undefined
+  maxVol: number | undefined
+  convert: string
+}
+
+export function filterListings(
+  rows: CmcListing[],
+  opts: ClientFilterOptions,
+): CmcListing[] {
+  const t = opts.text.trim().toLowerCase()
+  return rows.filter((row) => {
+    if (t) {
+      const n = row.name.toLowerCase()
+      const s = row.symbol.toLowerCase()
+      if (!n.includes(t) && !s.includes(t)) return false
+    }
+    const q = row.quote[opts.convert] ?? row.quote['USD']
+    if (!q) return false
+    if (opts.minMcap != null && q.market_cap < opts.minMcap) return false
+    if (opts.maxMcap != null && q.market_cap > opts.maxMcap) return false
+    if (opts.minVol != null && q.volume_24h < opts.minVol) return false
+    if (opts.maxVol != null && q.volume_24h > opts.maxVol) return false
+    return true
+  })
+}
