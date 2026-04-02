@@ -1,7 +1,7 @@
 import type { FilterFormState } from './filterTypes.ts'
 
 export const defaultFilterState: FilterFormState = {
-  limit: 100,
+  limit: 50,
   sort: 'market_cap',
   sort_dir: 'desc',
   convert: 'USD',
