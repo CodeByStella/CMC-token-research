@@ -1,0 +1,2 @@
+# Netlify: proxy same path as Vite / vercel.json (see src/config/cmcOrigin.ts)
+/cmc-api/* https://pro-api.coinmarketcap.com/:splat 200

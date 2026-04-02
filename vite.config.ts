@@ -1,6 +1,10 @@
 import { defineConfig, loadEnv } from 'vite'
 import type { ProxyOptions } from 'vite'
 import react from '@vitejs/plugin-react'
+import {
+  CMC_PRO_API_ORIGIN,
+  CMC_PRO_API_PROXY_PATH,
+} from './src/config/cmcOrigin'
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
@@ -8,9 +12,12 @@ export default defineConfig(({ mode }) => {
   const apiKey = env.CMC_API_KEY ?? ''
 
   const cmcProxy: ProxyOptions = {
-    target: 'https://pro-api.coinmarketcap.com',
+    target: CMC_PRO_API_ORIGIN,
     changeOrigin: true,
-    rewrite: (path: string) => path.replace(/^\/cmc-api/, ''),
+    rewrite: (path: string) =>
+      path.startsWith(CMC_PRO_API_PROXY_PATH)
+        ? path.slice(CMC_PRO_API_PROXY_PATH.length) || '/'
+        : path,
     configure: (proxy) => {
       proxy.on('proxyReq', (proxyReq, req) => {
         // Browser cookies for localhost are forwarded by default; CMC rejects
@@ -35,13 +42,13 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     server: {
       proxy: {
-        '/cmc-api': cmcProxy,
+        [CMC_PRO_API_PROXY_PATH]: cmcProxy,
       },
       host: true,
     },
     preview: {
       proxy: {
-        '/cmc-api': cmcProxy,
+        [CMC_PRO_API_PROXY_PATH]: cmcProxy,
       },
     },
   }

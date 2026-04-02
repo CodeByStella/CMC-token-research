@@ -1,9 +1,10 @@
 import axios from 'axios'
+import { CMC_PRO_API_PROXY_PATH } from '../config/cmcOrigin'
 import { getStoredApiKey } from '../utils/apiKeyStorage'
 
-/** Same-origin path; Vite proxies to CoinMarketCap (key from header or server env). */
+/** Same-origin path → proxied to CoinMarketCap (Vite dev / host rewrite; key from client or server env). */
 export const cmcClient = axios.create({
-  baseURL: '/cmc-api',
+  baseURL: CMC_PRO_API_PROXY_PATH,
   headers: {
     Accept: 'application/json',
   },

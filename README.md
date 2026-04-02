@@ -13,9 +13,9 @@ Single-page CoinMarketCap token search: advanced filters, table results with sor
 
 2. Open the app and paste your [CoinMarketCap Pro API](https://coinmarketcap.com/api/) key in the field at the top, then click **Save**. The key is stored in **localStorage** (`cmc_token_research_api_key`) for this browser only.
 
-The app calls the API through a **Vite dev-server proxy** at `/cmc-api`, which forwards the `X-CMC_PRO_API_KEY` header from the client to CoinMarketCap.
+The upstream API origin is defined once in `src/config/cmcOrigin.ts` (`CMC_PRO_API_ORIGIN`). The browser always calls **same-origin** `/cmc-api` (see `CMC_PRO_API_PROXY_PATH`) so the key is not blocked by CORS: the **Vite dev/preview server** proxies to CoinMarketCap, and **Vercel** uses `vercel.json` rewrites to the same host. Do not point axios directly at `pro-api.coinmarketcap.com` from the client — CoinMarketCap does not allow browser CORS for that API.
 
-**Static hosting note:** plain static hosting (for example GitHub Pages) does not run the Vite proxy. For production you would need a small backend or serverless function that forwards requests with `X-CMC_PRO_API_KEY`.
+**Other static hosts:** configure a rewrite/proxy from `/cmc-api/*` to `https://pro-api.coinmarketcap.com/*`, or use a small backend. Plain GitHub Pages has no rewrites unless you add Actions or an external worker.
 
 ## How search works
 
