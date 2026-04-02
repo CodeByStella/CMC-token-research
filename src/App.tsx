@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { fetchUrlsByIdsProgressive } from './api/info'
 import { fetchListingsLatest } from './api/listings'
 import { ApiKeyBar } from './components/ApiKeyBar'
 import { FilterPanel } from './components/FilterPanel'
 import { defaultFilterState } from './components/filterDefaults'
 import type { FilterFormState } from './components/filterTypes.ts'
+import { SiteFooter } from './components/SiteFooter'
 import { TokenTable } from './components/TokenTable'
 import type { CmcListing, CmcUrls } from './types/cmc'
 import {
@@ -187,9 +188,7 @@ function App() {
     [filters],
   )
 
-  useEffect(() => {
-    if (!hasApiKey) setApiKeyCollapsed(false)
-  }, [hasApiKey])
+  const apiKeyCollapsedEffective = hasApiKey ? apiKeyCollapsed : false
 
   const handleSearchFromFilters = useCallback(async () => {
     const ok = await loadListings(1)
@@ -230,7 +229,7 @@ function App() {
     <div className="app">
       <ApiKeyBar
         onKeyChange={setHasApiKey}
-        collapsed={apiKeyCollapsed}
+        collapsed={apiKeyCollapsedEffective}
         onExpand={() => setApiKeyCollapsed(false)}
         onSaved={() => setApiKeyCollapsed(true)}
       />
@@ -302,6 +301,8 @@ function App() {
           </button>
         </nav>
       </section>
+
+      <SiteFooter />
     </div>
   )
 }
