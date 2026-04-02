@@ -1,5 +1,6 @@
 import type { ListingsSort } from '../types/cmc'
 import type { FilterFormState } from './filterTypes.ts'
+import { formatFilterSummary } from './filterSummary.ts'
 
 const SORT_OPTIONS: { value: ListingsSort; label: string }[] = [
   { value: 'market_cap', label: 'Market cap' },
@@ -18,10 +19,12 @@ const CONVERT_OPTIONS = ['USD', 'EUR', 'GBP', 'JPY', 'BTC', 'ETH']
 export interface FilterPanelProps {
   value: FilterFormState
   onChange: (next: FilterFormState) => void
-  onSearch: () => void
+  onSearch: () => void | Promise<void>
   loading: boolean
   /** When false, Search is disabled (no API key saved). */
   canSearch: boolean
+  collapsed: boolean
+  onExpand: () => void
 }
 
 export function FilterPanel({
@@ -30,9 +33,30 @@ export function FilterPanel({
   onSearch,
   loading,
   canSearch,
+  collapsed,
+  onExpand,
 }: FilterPanelProps) {
   const patch = (partial: Partial<FilterFormState>) =>
     onChange({ ...value, ...partial })
+
+  if (collapsed) {
+    return (
+      <section
+        className="collapsible-bar collapsible-bar--filters"
+        aria-label="Search filters (collapsed)"
+      >
+        <div className="collapsible-bar__summary-wrap">
+          <span className="collapsible-bar__label">Filters</span>
+          <span className="collapsible-bar__summary" title={formatFilterSummary(value)}>
+            {formatFilterSummary(value)}
+          </span>
+        </div>
+        <button type="button" className="btn-secondary" onClick={onExpand}>
+          Edit
+        </button>
+      </section>
+    )
+  }
 
   return (
     <section className="filter-panel" aria-label="Search filters">
@@ -189,7 +213,7 @@ export function FilterPanel({
         <button
           type="button"
           className="btn-primary"
-          onClick={onSearch}
+          onClick={() => void onSearch()}
           disabled={loading || !canSearch}
           title={
             !canSearch ? 'Save your CoinMarketCap API key above first' : undefined

@@ -98,8 +98,12 @@ export function TokenLinks({ urls, loading }: TokenLinksProps) {
         <div className="link-row">
           <span className="link-row__label">Site</span>
           <div className="link-row__icons">
-            {site.map((s) => (
-              <IconButton key={s.href} href={s.href} label={s.label}>
+            {site.map((s, i) => (
+              <IconButton
+                key={`site-${String(i)}-${s.label}-${s.href}`}
+                href={s.href}
+                label={s.label}
+              >
                 {s.node}
               </IconButton>
             ))}
@@ -110,8 +114,12 @@ export function TokenLinks({ urls, loading }: TokenLinksProps) {
         <div className="link-row">
           <span className="link-row__label">Social</span>
           <div className="link-row__icons">
-            {social.map((s) => (
-              <IconButton key={s.href} href={s.href} label={s.label}>
+            {social.map((s, i) => (
+              <IconButton
+                key={`social-${String(i)}-${s.label}-${s.href}`}
+                href={s.href}
+                label={s.label}
+              >
                 {s.node}
               </IconButton>
             ))}

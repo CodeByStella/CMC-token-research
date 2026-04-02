@@ -11,22 +11,56 @@ const DOCS_QUICK_START =
 
 export interface ApiKeyBarProps {
   onKeyChange: (hasKey: boolean) => void
+  /** When true, only a compact summary + Edit is shown. */
+  collapsed: boolean
+  onExpand: () => void
+  /** Called after Save with a non-empty key (parent may collapse). */
+  onSaved?: () => void
 }
 
-export function ApiKeyBar({ onKeyChange }: ApiKeyBarProps) {
+export function ApiKeyBar({
+  onKeyChange,
+  collapsed,
+  onExpand,
+  onSaved,
+}: ApiKeyBarProps) {
   const [value, setValue] = useState(() => getStoredApiKey())
   const [showKey, setShowKey] = useState(false)
 
   const apply = useCallback(() => {
-    setStoredApiKey(value)
-    onKeyChange(!!getStoredApiKey())
-  }, [value, onKeyChange])
+    const trimmed = value.trim()
+    setStoredApiKey(trimmed)
+    const has = !!getStoredApiKey()
+    onKeyChange(has)
+    if (has) onSaved?.()
+  }, [value, onKeyChange, onSaved])
 
   const clear = useCallback(() => {
     setValue('')
     setStoredApiKey('')
     onKeyChange(false)
   }, [onKeyChange])
+
+  if (collapsed) {
+    return (
+      <section
+        className="collapsible-bar"
+        aria-label="CoinMarketCap API key (collapsed)"
+      >
+        <div className="collapsible-bar__summary-wrap">
+          <span className="collapsible-bar__label">API key</span>
+          {getStoredApiKey() ? (
+            <span className="collapsible-bar__muted">saved in this browser</span>
+          ) : (
+            <span className="collapsible-bar__muted">not set</span>
+          )}
+        </div>
+        <button type="button" className="btn-secondary" onClick={onExpand}>
+          Edit
+        </button>
+      </section>
+    )
+  }
 
   return (
     <section className="api-key-bar" aria-label="CoinMarketCap API key">

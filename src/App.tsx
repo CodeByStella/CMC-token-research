@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { fetchUrlsByIdsProgressive } from './api/info'
 import { fetchListingsLatest } from './api/listings'
 import { ApiKeyBar } from './components/ApiKeyBar'
@@ -34,6 +34,10 @@ function App() {
   const [hasApiKey, setHasApiKey] = useState(
     () => typeof window !== 'undefined' && !!getStoredApiKey(),
   )
+  const [apiKeyCollapsed, setApiKeyCollapsed] = useState(
+    () => typeof window !== 'undefined' && !!getStoredApiKey(),
+  )
+  const [filtersCollapsed, setFiltersCollapsed] = useState(false)
   const [filters, setFilters] = useState<FilterFormState>(defaultFilterState)
   const [page, setPage] = useState(1)
   const [rawRows, setRawRows] = useState<CmcListing[]>([])
@@ -99,8 +103,8 @@ function App() {
   }, [sortedRows, filters.convert, urlsById])
 
   const loadListings = useCallback(
-    async (pageNum: number) => {
-      if (!getStoredApiKey()) return
+    async (pageNum: number): Promise<boolean> => {
+      if (!getStoredApiKey()) return false
       infoAbortRef.current?.abort()
       const ac = new AbortController()
       infoAbortRef.current = ac
@@ -128,7 +132,7 @@ function App() {
           )
           setRawRows([])
           setLoading(false)
-          return
+          return false
         }
         const rows = res.data ?? []
         setRawRows(rows)
@@ -141,25 +145,29 @@ function App() {
 
         setLoading(false)
 
-        try {
-          await fetchUrlsByIdsProgressive(
-            ids,
-            (partial, chunkIds) => {
-              if (ac.signal.aborted) return
-              setUrlsById((prev) => ({ ...prev, ...partial }))
-              setInfoLoadingById((prev) => {
-                const next = { ...prev }
-                for (const id of chunkIds) next[id] = false
-                return next
-              })
-            },
-            { signal: ac.signal },
-          )
-        } catch {
-          if (!ac.signal.aborted) {
-            setInfoLoadingById({})
+        void (async () => {
+          try {
+            await fetchUrlsByIdsProgressive(
+              ids,
+              (partial, chunkIds) => {
+                if (ac.signal.aborted) return
+                setUrlsById((prev) => ({ ...prev, ...partial }))
+                setInfoLoadingById((prev) => {
+                  const next = { ...prev }
+                  for (const id of chunkIds) next[id] = false
+                  return next
+                })
+              },
+              { signal: ac.signal },
+            )
+          } catch {
+            if (!ac.signal.aborted) {
+              setInfoLoadingById({})
+            }
           }
-        }
+        })()
+
+        return true
       } catch (e) {
         if (axios.isAxiosError(e)) {
           const data = e.response?.data as
@@ -173,13 +181,19 @@ function App() {
         setUrlsById({})
         setInfoLoadingById({})
         setLoading(false)
+        return false
       }
     },
     [filters],
   )
 
-  const handleSearchFromFilters = useCallback(() => {
-    void loadListings(1)
+  useEffect(() => {
+    if (!hasApiKey) setApiKeyCollapsed(false)
+  }, [hasApiKey])
+
+  const handleSearchFromFilters = useCallback(async () => {
+    const ok = await loadListings(1)
+    if (ok) setFiltersCollapsed(true)
   }, [loadListings])
 
   const handlePrevPage = useCallback(() => {
@@ -214,13 +228,20 @@ function App() {
 
   return (
     <div className="app">
-      <ApiKeyBar onKeyChange={setHasApiKey} />
+      <ApiKeyBar
+        onKeyChange={setHasApiKey}
+        collapsed={apiKeyCollapsed}
+        onExpand={() => setApiKeyCollapsed(false)}
+        onSaved={() => setApiKeyCollapsed(true)}
+      />
       <FilterPanel
         value={filters}
         onChange={setFilters}
         onSearch={handleSearchFromFilters}
         loading={loading}
         canSearch={hasApiKey}
+        collapsed={filtersCollapsed}
+        onExpand={() => setFiltersCollapsed(false)}
       />
 
       {error ? (
