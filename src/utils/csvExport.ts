@@ -1,11 +1,6 @@
-import type { CmcListing, CmcUrls, TokenMarkets } from '../types/cmc'
+import type { CmcListing, CmcUrls } from '../types/cmc'
 import { getQuote } from './sortListings'
 import { firstHttp } from './url'
-
-function joinUrls(links: { url: string }[] | undefined): string {
-  if (!links?.length) return ''
-  return links.map((l) => l.url).join('|')
-}
 
 function escapeCsvCell(value: string): string {
   if (/[",\n\r]/.test(value)) {
@@ -25,6 +20,7 @@ const HEADERS = [
   'name',
   'symbol',
   'slug',
+  'date_added',
   'quote_currency',
   'price',
   'market_cap',
@@ -41,15 +37,12 @@ const HEADERS = [
   'chat_url',
   'announcement_url',
   'message_board_url',
-  'cex_market_urls',
-  'dex_market_urls',
 ] as const
 
 export function buildCmcListingsCsv(
   rows: CmcListing[],
   convert: string,
   urlsById: Record<number, CmcUrls | undefined>,
-  marketsById: Record<number, TokenMarkets | undefined>,
 ): string {
   const lines: string[] = [
     HEADERS.map((h) => escapeCsvCell(h)).join(','),
@@ -58,13 +51,13 @@ export function buildCmcListingsCsv(
   for (const row of rows) {
     const q = getQuote(row, convert)
     const u = urlsById[row.id]
-    const m = marketsById[row.id]
     const cells = [
       n(row.cmc_rank),
       n(row.id),
       row.name,
       row.symbol,
       row.slug,
+      row.date_added ?? '',
       convert,
       n(q?.price),
       n(q?.market_cap),
@@ -81,8 +74,6 @@ export function buildCmcListingsCsv(
       firstHttp(u?.chat) ?? '',
       firstHttp(u?.announcement) ?? '',
       firstHttp(u?.message_board) ?? '',
-      joinUrls(m?.cex),
-      joinUrls(m?.dex),
     ]
     lines.push(cells.map((c) => escapeCsvCell(c)).join(','))
   }

@@ -23,6 +23,8 @@ export interface CmcListing {
   symbol: string
   slug: string
   cmc_rank: number
+  /** ISO 8601 — used for client-side "listed after" filter. */
+  date_added?: string
   quote: CmcQuoteMap
 }
 
@@ -55,20 +57,6 @@ export interface CmcInfoResponse {
   status: CmcStatus
 }
 
-/** Parsed CEX / DEX market link for UI + CSV. */
-export interface MarketLink {
-  url: string
-  exchangeName: string
-  exchangeSlug?: string
-  logoUrl?: string
-  pairLabel?: string
-}
-
-export interface TokenMarkets {
-  cex: MarketLink[]
-  dex: MarketLink[]
-}
-
 export type ListingsSort =
   | 'market_cap'
   | 'name'
@@ -78,6 +66,7 @@ export type ListingsSort =
   | 'percent_change_7d'
   | 'price'
   | 'circulating_supply'
+  | 'date_added'
 
 export interface ListingsLatestParams {
   start?: number

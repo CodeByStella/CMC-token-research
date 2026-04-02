@@ -1,7 +1,6 @@
-import type { FilterFormState } from './filterTypes'
+import type { FilterFormState } from './filterTypes.ts'
 
 export const defaultFilterState: FilterFormState = {
-  start: 1,
   limit: 100,
   sort: 'market_cap',
   sort_dir: 'desc',
@@ -12,4 +11,5 @@ export const defaultFilterState: FilterFormState = {
   maxMcap: '',
   minVol: '',
   maxVol: '',
+  minDateAdded: '',
 }

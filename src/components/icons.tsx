@@ -73,22 +73,6 @@ export function IconExplorer(p: SVGProps<SVGSVGElement>) {
   )
 }
 
-export function IconBuilding(p: SVGProps<SVGSVGElement>) {
-  return (
-    <svg {...base(p)}>
-      <path d="M4 21V8l8-4 8 4v13h-6v-7H10v7H4zm2-2h2v-2H6v2zm0-4h2v-2H6v2zm0-4h2V9H6v2zm10 8h2v-2h-2v2zm0-4h2v-2h-2v2zm0-4h2V9h-2v2z" />
-    </svg>
-  )
-}
-
-export function IconSwap(p: SVGProps<SVGSVGElement>) {
-  return (
-    <svg {...base(p)}>
-      <path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z" />
-    </svg>
-  )
-}
-
 export function IconMegaphone(p: SVGProps<SVGSVGElement>) {
   return (
     <svg {...base(p)}>

@@ -1,7 +1,6 @@
-import type { ListingsSort } from '../types/cmc'
+import type { ListingsSort } from '../types/cmc.ts'
 
 export interface FilterFormState {
-  start: number
   limit: number
   sort: ListingsSort
   sort_dir: 'asc' | 'desc'
@@ -12,4 +11,6 @@ export interface FilterFormState {
   maxMcap: string
   minVol: string
   maxVol: string
+  /** `YYYY-MM-DD` or empty — list only assets with date_added on or after this day (current page). */
+  minDateAdded: string
 }

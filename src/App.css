@@ -4,6 +4,81 @@
   gap: 1.5rem;
 }
 
+.api-key-bar {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1rem 1.25rem;
+}
+
+.api-key-bar__row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.api-key-bar__label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.api-key-bar__inputs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.api-key-bar__input {
+  flex: 1 1 220px;
+  min-width: 0;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--text);
+  padding: 0.5rem 0.65rem;
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 0.85rem;
+}
+
+.api-key-bar__input:focus {
+  outline: none;
+  border-color: var(--border-strong);
+  box-shadow: 0 0 0 1px var(--accent-soft);
+}
+
+.api-key-bar__links {
+  margin: 0.65rem 0 0;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+
+.api-key-bar__links a {
+  color: var(--accent);
+}
+
+.api-key-bar__note {
+  margin: 0.5rem 0 0;
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  max-width: 70ch;
+}
+
+.api-key-bar__note code {
+  font-size: 0.85em;
+  padding: 0.1em 0.25em;
+  background: var(--bg-input);
+  border-radius: 2px;
+}
+
+.btn-secondary--small {
+  padding: 0.4rem 0.65rem;
+  font-size: 0.68rem;
+}
+
 .filter-panel {
   background: var(--bg-panel);
   border: 1px solid var(--border);
@@ -27,7 +102,21 @@
   margin: 0.5rem 0 0;
   font-size: 0.85rem;
   color: var(--text-dim);
-  max-width: 52ch;
+  max-width: 62ch;
+}
+
+.field-hint {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+.field-hint code {
+  font-size: 0.85em;
+  padding: 0.1em 0.25em;
+  background: var(--bg-input);
+  border-radius: 2px;
 }
 
 .filter-grid {
@@ -327,4 +416,43 @@
 .link-empty {
   color: var(--text-dim);
   font-size: 0.85rem;
+}
+
+.link-spinner-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  min-width: 28px;
+}
+
+.link-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: link-spin 0.7s linear infinite;
+}
+
+@keyframes link-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem 1rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.pagination__status {
+  font-size: 0.85rem;
+  color: var(--text-dim);
 }

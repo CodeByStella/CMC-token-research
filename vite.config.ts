@@ -12,12 +12,20 @@ export default defineConfig(({ mode }) => {
     changeOrigin: true,
     rewrite: (path: string) => path.replace(/^\/cmc-api/, ''),
     configure: (proxy) => {
-      proxy.on('proxyReq', (proxyReq) => {
+      proxy.on('proxyReq', (proxyReq, req) => {
         // Browser cookies for localhost are forwarded by default; CMC rejects
         // oversized Cookie headers (nginx/Tengine: "Request Header Or Cookie Too Large").
         proxyReq.removeHeader('cookie')
-        if (apiKey) {
-          proxyReq.setHeader('X-CMC_PRO_API_KEY', apiKey)
+        const raw = req.headers['x-cmc-pro-api-key']
+        const fromClient =
+          typeof raw === 'string'
+            ? raw
+            : Array.isArray(raw)
+              ? raw[0]
+              : ''
+        const key = (fromClient?.trim() || apiKey) as string
+        if (key) {
+          proxyReq.setHeader('X-CMC_PRO_API_KEY', key)
         }
       })
     },

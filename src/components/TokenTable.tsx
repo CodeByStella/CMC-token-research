@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import type { CmcListing, CmcUrls, TokenMarkets } from '../types/cmc'
+import type { CmcListing, CmcUrls } from '../types/cmc'
 import { getQuote, type TableSortKey } from '../utils/sortListings'
 import { TokenLinks } from './TokenLinks'
 
@@ -12,7 +12,8 @@ export interface TokenTableProps {
   sortDir: 'asc' | 'desc'
   onSort: (key: TableSortKey) => void
   urlsById: Record<number, CmcUrls | undefined>
-  marketsById: Record<number, TokenMarkets | undefined>
+  /** Per-row: true while v2/info for that id has not completed yet. */
+  infoLoadingById: Record<number, boolean | undefined>
 }
 
 function formatPrice(val: number | undefined, convert: string) {
@@ -31,10 +32,22 @@ function formatPrice(val: number | undefined, convert: string) {
   }
 }
 
+function formatDateAdded(iso?: string): string {
+  if (!iso) return '—'
+  const d = new Date(iso)
+  if (!Number.isFinite(d.getTime())) return '—'
+  return d.toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  })
+}
+
 const COLS: { key: TableSortKey; label: string }[] = [
   { key: 'cmc_rank', label: 'Rank' },
   { key: 'name', label: 'Name' },
   { key: 'symbol', label: 'Symbol' },
+  { key: 'date_added', label: 'Added' },
   { key: 'price', label: 'Price' },
   { key: 'market_cap', label: 'Market cap' },
   { key: 'volume_24h', label: 'Vol 24h' },
@@ -49,7 +62,7 @@ export function TokenTable({
   sortDir,
   onSort,
   urlsById,
-  marketsById,
+  infoLoadingById,
 }: TokenTableProps) {
   const compact = useMemo(
     () => new Intl.NumberFormat(undefined, { notation: 'compact' }),
@@ -105,11 +118,13 @@ export function TokenTable({
           {rows.map((row) => {
             const q = getQuote(row, convert)
             const price = formatPrice(q?.price, convert)
+            const linkLoading = infoLoadingById[row.id] === true
             return (
               <tr key={row.id}>
                 <td>{row.cmc_rank}</td>
                 <td>{row.name}</td>
                 <td className="mono">{row.symbol}</td>
+                <td className="num">{formatDateAdded(row.date_added)}</td>
                 <td className="num mono">{price}</td>
                 <td className="num">{compact.format(q?.market_cap ?? 0)}</td>
                 <td className="num">{compact.format(q?.volume_24h ?? 0)}</td>
@@ -132,7 +147,7 @@ export function TokenTable({
                 <td className="link-cell">
                   <TokenLinks
                     urls={urlsById[row.id]}
-                    markets={marketsById[row.id]}
+                    loading={linkLoading}
                   />
                 </td>
               </tr>

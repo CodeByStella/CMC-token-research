@@ -1,17 +1,18 @@
-import { useCallback, useMemo, useState } from 'react'
-import { fetchUrlsByIds } from './api/info'
+import { useCallback, useMemo, useRef, useState } from 'react'
+import { fetchUrlsByIdsProgressive } from './api/info'
 import { fetchListingsLatest } from './api/listings'
-import { fetchMarketPairsForIds } from './api/marketPairs'
+import { ApiKeyBar } from './components/ApiKeyBar'
 import { FilterPanel } from './components/FilterPanel'
 import { defaultFilterState } from './components/filterDefaults'
-import type { FilterFormState } from './components/filterTypes'
+import type { FilterFormState } from './components/filterTypes.ts'
 import { TokenTable } from './components/TokenTable'
-import type { CmcListing, CmcUrls, TokenMarkets } from './types/cmc'
+import type { CmcListing, CmcUrls } from './types/cmc'
 import {
   buildCmcListingsCsv,
   defaultCsvFilename,
   downloadCsvFile,
 } from './utils/csvExport'
+import { getStoredApiKey } from './utils/apiKeyStorage'
 import { filterListings } from './utils/filterListings'
 import { type TableSortKey, sortCmcListings } from './utils/sortListings'
 import './App.css'
@@ -30,16 +31,22 @@ interface TableSortState {
 }
 
 function App() {
+  const [hasApiKey, setHasApiKey] = useState(
+    () => typeof window !== 'undefined' && !!getStoredApiKey(),
+  )
   const [filters, setFilters] = useState<FilterFormState>(defaultFilterState)
+  const [page, setPage] = useState(1)
   const [rawRows, setRawRows] = useState<CmcListing[]>([])
   const [urlsById, setUrlsById] = useState<Record<number, CmcUrls | undefined>>(
     {},
   )
-  const [marketsById, setMarketsById] = useState<
-    Record<number, TokenMarkets | undefined>
+  const [infoLoadingById, setInfoLoadingById] = useState<
+    Record<number, boolean | undefined>
   >({})
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const infoAbortRef = useRef<AbortController | null>(null)
 
   const [tableSort, setTableSort] = useState<TableSortState>({
     key: 'cmc_rank',
@@ -54,6 +61,10 @@ function App() {
       minVol: parseOptNumber(filters.minVol),
       maxVol: parseOptNumber(filters.maxVol),
       convert: filters.convert,
+      minDateAdded:
+        filters.minDateAdded.trim() === ''
+          ? undefined
+          : filters.minDateAdded.trim(),
     }),
     [
       filters.text,
@@ -62,6 +73,7 @@ function App() {
       filters.minVol,
       filters.maxVol,
       filters.convert,
+      filters.minDateAdded,
     ],
   )
 
@@ -82,68 +94,104 @@ function App() {
   )
 
   const handleExportCsv = useCallback(() => {
-    const csv = buildCmcListingsCsv(
-      sortedRows,
-      filters.convert,
-      urlsById,
-      marketsById,
-    )
+    const csv = buildCmcListingsCsv(sortedRows, filters.convert, urlsById)
     downloadCsvFile(defaultCsvFilename(), csv)
-  }, [sortedRows, filters.convert, urlsById, marketsById])
+  }, [sortedRows, filters.convert, urlsById])
 
-  const handleSearch = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const res = await fetchListingsLatest({
-        start: filters.start,
-        limit: filters.limit,
-        sort: filters.sort,
-        sort_dir: filters.sort_dir,
-        convert: filters.convert,
-        cryptocurrency_type: filters.cryptocurrency_type,
-      })
-      if (res.status.error_code !== 0) {
-        setError(
-          res.status.error_message ??
-            `API error (code ${String(res.status.error_code)})`,
-        )
-        setRawRows([])
-        setUrlsById({})
-        setMarketsById({})
-        return
-      }
-      const rows = res.data ?? []
-      setRawRows(rows)
+  const loadListings = useCallback(
+    async (pageNum: number) => {
+      if (!getStoredApiKey()) return
+      infoAbortRef.current?.abort()
+      const ac = new AbortController()
+      infoAbortRef.current = ac
+
+      setLoading(true)
+      setError(null)
+      setUrlsById({})
+      setInfoLoadingById({})
+
+      const start = (pageNum - 1) * filters.limit + 1
 
       try {
+        const res = await fetchListingsLatest({
+          start,
+          limit: filters.limit,
+          sort: filters.sort,
+          sort_dir: filters.sort_dir,
+          convert: filters.convert,
+          cryptocurrency_type: filters.cryptocurrency_type,
+        })
+        if (res.status.error_code !== 0) {
+          setError(
+            res.status.error_message ??
+              `API error (code ${String(res.status.error_code)})`,
+          )
+          setRawRows([])
+          setLoading(false)
+          return
+        }
+        const rows = res.data ?? []
+        setRawRows(rows)
+        setPage(pageNum)
+
         const ids = rows.map((r) => r.id)
-        const [urls, markets] = await Promise.all([
-          fetchUrlsByIds(ids),
-          fetchMarketPairsForIds(ids),
-        ])
-        setUrlsById(urls)
-        setMarketsById(markets)
-      } catch {
+        const loadingInit: Record<number, boolean> = {}
+        for (const id of ids) loadingInit[id] = true
+        setInfoLoadingById(loadingInit)
+
+        setLoading(false)
+
+        try {
+          await fetchUrlsByIdsProgressive(
+            ids,
+            (partial, chunkIds) => {
+              if (ac.signal.aborted) return
+              setUrlsById((prev) => ({ ...prev, ...partial }))
+              setInfoLoadingById((prev) => {
+                const next = { ...prev }
+                for (const id of chunkIds) next[id] = false
+                return next
+              })
+            },
+            { signal: ac.signal },
+          )
+        } catch {
+          if (!ac.signal.aborted) {
+            setInfoLoadingById({})
+          }
+        }
+      } catch (e) {
+        if (axios.isAxiosError(e)) {
+          const data = e.response?.data as
+            | { status?: { error_message?: string } }
+            | undefined
+          setError(data?.status?.error_message ?? e.message)
+        } else {
+          setError(e instanceof Error ? e.message : 'Request failed')
+        }
+        setRawRows([])
         setUrlsById({})
-        setMarketsById({})
+        setInfoLoadingById({})
+        setLoading(false)
       }
-    } catch (e) {
-      if (axios.isAxiosError(e)) {
-        const data = e.response?.data as
-          | { status?: { error_message?: string } }
-          | undefined
-        setError(data?.status?.error_message ?? e.message)
-      } else {
-        setError(e instanceof Error ? e.message : 'Request failed')
-      }
-      setRawRows([])
-      setUrlsById({})
-      setMarketsById({})
-    } finally {
-      setLoading(false)
-    }
-  }, [filters])
+    },
+    [filters],
+  )
+
+  const handleSearchFromFilters = useCallback(() => {
+    void loadListings(1)
+  }, [loadListings])
+
+  const handlePrevPage = useCallback(() => {
+    if (!hasApiKey || page <= 1 || loading) return
+    void loadListings(page - 1)
+  }, [hasApiKey, page, loading, loadListings])
+
+  const handleNextPage = useCallback(() => {
+    if (!hasApiKey || loading) return
+    if (rawRows.length < filters.limit) return
+    void loadListings(page + 1)
+  }, [hasApiKey, page, loading, loadListings, rawRows.length, filters.limit])
 
   const handleTableSort = useCallback((key: TableSortKey) => {
     setTableSort((prev) => {
@@ -161,13 +209,18 @@ function App() {
     })
   }, [])
 
+  const canGoNext = rawRows.length >= filters.limit
+  const canGoPrev = page > 1
+
   return (
     <div className="app">
+      <ApiKeyBar onKeyChange={setHasApiKey} />
       <FilterPanel
         value={filters}
         onChange={setFilters}
-        onSearch={() => void handleSearch()}
+        onSearch={handleSearchFromFilters}
         loading={loading}
+        canSearch={hasApiKey}
       />
 
       {error ? (
@@ -189,13 +242,11 @@ function App() {
           </button>
         </div>
         <p className="results__meta">
-          Showing {filteredRows.length} row
-          {filteredRows.length === 1 ? '' : 's'}
-          {rawRows.length ? ` (from ${String(rawRows.length)} fetched)` : ''}
-          {Object.keys(urlsById).length > 0 ||
-          Object.keys(marketsById).length > 0
-            ? ' · Links & markets from CoinMarketCap'
-            : null}
+          Page {String(page)} · {filteredRows.length} row
+          {filteredRows.length === 1 ? '' : 's'} after client filters
+          {rawRows.length
+            ? ` (${String(rawRows.length)} from API)`
+            : ''}
         </p>
         <TokenTable
           rows={sortedRows}
@@ -204,8 +255,31 @@ function App() {
           sortDir={tableSort.dir}
           onSort={handleTableSort}
           urlsById={urlsById}
-          marketsById={marketsById}
+          infoLoadingById={infoLoadingById}
         />
+
+        <nav className="pagination" aria-label="Pagination">
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={handlePrevPage}
+            disabled={!hasApiKey || !canGoPrev || loading}
+          >
+            Previous
+          </button>
+          <span className="pagination__status">
+            Page {String(page)}
+            {!canGoNext && rawRows.length > 0 ? ' (last page)' : ''}
+          </span>
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={handleNextPage}
+            disabled={!hasApiKey || !canGoNext || loading}
+          >
+            Next
+          </button>
+        </nav>
       </section>
     </div>
   )

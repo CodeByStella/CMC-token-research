@@ -1,11 +1,12 @@
 import type { ListingsSort } from '../types/cmc'
-import type { FilterFormState } from './filterTypes'
+import type { FilterFormState } from './filterTypes.ts'
 
 const SORT_OPTIONS: { value: ListingsSort; label: string }[] = [
   { value: 'market_cap', label: 'Market cap' },
   { value: 'volume_24h', label: 'Volume 24h' },
   { value: 'name', label: 'Name' },
   { value: 'symbol', label: 'Symbol' },
+  { value: 'date_added', label: 'Date added' },
   { value: 'price', label: 'Price' },
   { value: 'percent_change_24h', label: 'Change 24h' },
   { value: 'percent_change_7d', label: 'Change 7d' },
@@ -19,6 +20,8 @@ export interface FilterPanelProps {
   onChange: (next: FilterFormState) => void
   onSearch: () => void
   loading: boolean
+  /** When false, Search is disabled (no API key saved). */
+  canSearch: boolean
 }
 
 export function FilterPanel({
@@ -26,6 +29,7 @@ export function FilterPanel({
   onChange,
   onSearch,
   loading,
+  canSearch,
 }: FilterPanelProps) {
   const patch = (partial: Partial<FilterFormState>) =>
     onChange({ ...value, ...partial })
@@ -35,26 +39,16 @@ export function FilterPanel({
       <div className="filter-panel__header">
         <h1 className="filter-panel__title">CMC token search</h1>
         <p className="filter-panel__hint">
-          API filters fetch a window of listings; name and numeric bounds filter
-          that result in the browser.
+          Listings use CoinMarketCap pagination (limit + page at bottom). Name,
+          numeric, and date filters apply to the current page in the browser.
+          Link metadata loads in small batches (~30 requests/minute on Basic).
         </p>
       </div>
 
       <fieldset className="filter-grid">
         <legend className="filter-grid__legend">API parameters</legend>
         <label className="field">
-          <span>Start rank</span>
-          <input
-            type="number"
-            min={1}
-            value={value.start}
-            onChange={(e) =>
-              patch({ start: Math.max(1, Number(e.target.value) || 1) })
-            }
-          />
-        </label>
-        <label className="field">
-          <span>Limit</span>
+          <span>Rows per page</span>
           <input
             type="number"
             min={1}
@@ -138,6 +132,18 @@ export function FilterPanel({
           />
         </label>
         <label className="field">
+          <span>Listed on or after (UTC day)</span>
+          <input
+            type="date"
+            value={value.minDateAdded}
+            onChange={(e) => patch({ minDateAdded: e.target.value })}
+          />
+        </label>
+        <p className="field-hint field--wide">
+          Uses <code>date_added</code> from the listing. Only filters assets on
+          this page, not the full CMC database.
+        </p>
+        <label className="field">
           <span>Min market cap</span>
           <input
             type="number"
@@ -184,7 +190,10 @@ export function FilterPanel({
           type="button"
           className="btn-primary"
           onClick={onSearch}
-          disabled={loading}
+          disabled={loading || !canSearch}
+          title={
+            !canSearch ? 'Save your CoinMarketCap API key above first' : undefined
+          }
         >
           {loading ? 'Searching…' : 'Search'}
         </button>

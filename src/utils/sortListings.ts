@@ -4,6 +4,7 @@ export type TableSortKey =
   | 'cmc_rank'
   | 'name'
   | 'symbol'
+  | 'date_added'
   | 'price'
   | 'market_cap'
   | 'volume_24h'
@@ -12,6 +13,12 @@ export type TableSortKey =
 
 export function getQuote(row: CmcListing, convert: string) {
   return row.quote[convert] ?? row.quote['USD']
+}
+
+function dateAddedMs(row: CmcListing): number {
+  if (!row.date_added) return 0
+  const t = new Date(row.date_added).getTime()
+  return Number.isFinite(t) ? t : 0
 }
 
 function compare(
@@ -36,6 +43,10 @@ function compare(
     case 'symbol':
       va = a.symbol.toLowerCase()
       vb = b.symbol.toLowerCase()
+      break
+    case 'date_added':
+      va = dateAddedMs(a)
+      vb = dateAddedMs(b)
       break
     case 'price':
       va = qa?.price ?? 0

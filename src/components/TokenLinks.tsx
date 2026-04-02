@@ -1,8 +1,7 @@
 import type { ReactNode } from 'react'
-import type { CmcUrls, MarketLink, TokenMarkets } from '../types/cmc'
+import type { CmcUrls } from '../types/cmc'
 import { firstHttp } from '../utils/url'
 import {
-  IconBuilding,
   IconDoc,
   IconExplorer,
   IconFacebook,
@@ -11,7 +10,6 @@ import {
   IconGlobe,
   IconMegaphone,
   IconReddit,
-  IconSwap,
   IconTelegram,
   IconTwitter,
 } from './icons'
@@ -34,37 +32,6 @@ function IconButton({
       title={label}
     >
       <span className="link-icon-btn__glyph">{children}</span>
-    </a>
-  )
-}
-
-function MarketIconButton({ link, dex }: { link: MarketLink; dex: boolean }) {
-  const title =
-    link.pairLabel != null
-      ? `${link.exchangeName} · ${link.pairLabel}`
-      : link.exchangeName
-  return (
-    <a
-      className="link-icon-btn"
-      href={link.url}
-      target="_blank"
-      rel="noopener noreferrer"
-      title={title}
-    >
-      {link.logoUrl ? (
-        <img
-          className="link-icon-btn__logo"
-          src={link.logoUrl}
-          alt=""
-          width={18}
-          height={18}
-          loading="lazy"
-        />
-      ) : (
-        <span className="link-icon-btn__glyph">
-          {dex ? <IconSwap /> : <IconBuilding />}
-        </span>
-      )}
     </a>
   )
 }
@@ -104,20 +71,22 @@ function buildSiteSocial(urls: CmcUrls): {
 
 export interface TokenLinksProps {
   urls?: CmcUrls
-  markets?: TokenMarkets
+  /** When true, show a small spinner instead of links (metadata still loading). */
+  loading?: boolean
 }
 
-export function TokenLinks({ urls, markets }: TokenLinksProps) {
+export function TokenLinks({ urls, loading }: TokenLinksProps) {
+  if (loading) {
+    return (
+      <span className="link-spinner-wrap" title="Loading links…">
+        <span className="link-spinner" aria-hidden />
+      </span>
+    )
+  }
+
   const { site, social } = urls ? buildSiteSocial(urls) : { site: [], social: [] }
 
-  const cex = markets?.cex ?? []
-  const dex = markets?.dex ?? []
-
-  const empty =
-    site.length === 0 &&
-    social.length === 0 &&
-    cex.length === 0 &&
-    dex.length === 0
+  const empty = site.length === 0 && social.length === 0
 
   if (empty) {
     return <span className="link-empty">—</span>
@@ -145,26 +114,6 @@ export function TokenLinks({ urls, markets }: TokenLinksProps) {
               <IconButton key={s.href} href={s.href} label={s.label}>
                 {s.node}
               </IconButton>
-            ))}
-          </div>
-        </div>
-      ) : null}
-      {cex.length > 0 ? (
-        <div className="link-row">
-          <span className="link-row__label">CEX</span>
-          <div className="link-row__icons">
-            {cex.map((m) => (
-              <MarketIconButton key={m.url} link={m} dex={false} />
-            ))}
-          </div>
-        </div>
-      ) : null}
-      {dex.length > 0 ? (
-        <div className="link-row">
-          <span className="link-row__label">DEX</span>
-          <div className="link-row__icons">
-            {dex.map((m) => (
-              <MarketIconButton key={m.url} link={m} dex />
             ))}
           </div>
         </div>
