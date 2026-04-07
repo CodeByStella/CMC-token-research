@@ -375,6 +375,20 @@
   font-family: var(--mono);
 }
 
+.token-cmc-link {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.token-cmc-link:hover {
+  text-decoration: underline;
+  color: var(--text);
+}
+
+.token-cmc-link--mono {
+  font-family: var(--mono);
+}
+
 .token-table .pos {
   color: var(--pos);
 }

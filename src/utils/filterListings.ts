@@ -2,10 +2,7 @@ import type { CmcListing } from '../types/cmc'
 
 export interface ClientFilterOptions {
   text: string
-  minMcap: number | undefined
-  maxMcap: number | undefined
-  minVol: number | undefined
-  maxVol: number | undefined
+  /** Quote key for `row.quote[convert]` — rows without this quote are dropped. */
   convert: string
   /** `YYYY-MM-DD` — keep rows with date_added on or after this day (UTC start). */
   minDateAdded: string | undefined
@@ -39,10 +36,6 @@ export function filterListings(
     }
     const q = row.quote[opts.convert] ?? row.quote['USD']
     if (!q) return false
-    if (opts.minMcap != null && q.market_cap < opts.minMcap) return false
-    if (opts.maxMcap != null && q.market_cap > opts.maxMcap) return false
-    if (opts.minVol != null && q.volume_24h < opts.minVol) return false
-    if (opts.maxVol != null && q.volume_24h > opts.maxVol) return false
     return true
   })
 }

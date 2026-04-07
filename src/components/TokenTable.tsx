@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import type { CmcListing, CmcUrls } from '../types/cmc'
+import { cmcCurrencyPageUrl } from '../utils/cmcWebUrls'
 import { getQuote, type TableSortKey } from '../utils/sortListings'
 import { TokenLinks } from './TokenLinks'
 
@@ -122,8 +123,28 @@ export function TokenTable({
             return (
               <tr key={row.id}>
                 <td>{row.cmc_rank}</td>
-                <td>{row.name}</td>
-                <td className="mono">{row.symbol}</td>
+                <td>
+                  <a
+                    className="token-cmc-link"
+                    href={cmcCurrencyPageUrl(row.slug)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title={`${row.name} on CoinMarketCap`}
+                  >
+                    {row.name}
+                  </a>
+                </td>
+                <td className="mono">
+                  <a
+                    className="token-cmc-link token-cmc-link--mono"
+                    href={cmcCurrencyPageUrl(row.slug)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title={`${row.symbol} on CoinMarketCap`}
+                  >
+                    {row.symbol}
+                  </a>
+                </td>
                 <td className="num">{formatDateAdded(row.date_added)}</td>
                 <td className="num mono">{price}</td>
                 <td className="num">{compact.format(q?.market_cap ?? 0)}</td>

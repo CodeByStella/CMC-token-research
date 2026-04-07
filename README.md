@@ -19,8 +19,10 @@ The upstream API origin is defined once in `src/config/cmcOrigin.ts` (`CMC_PRO_A
 
 ## How search works
 
-- **API parameters** (pagination, limit, sort, quote currency, asset type) are sent to `GET /v1/cryptocurrency/listings/latest`.
-- **Client filters** (name/symbol substring, min/max market cap and volume, listed-after date) apply to the returned rows in the browser. They do not search the full CMC universe; they narrow the current result set.
+Parameters map to the official **[Listings Latest](https://coinmarketcap.com/api/documentation/pro-api-reference/cryptocurrency#listings-latest)** reference for `GET /v1/cryptocurrency/listings/latest`:
+
+- **Query parameters:** `start`, `limit`, `sort`, `sort_dir`, `convert`, `cryptocurrency_type`, and optional `market_cap_min` / `market_cap_max`, `volume_24h_min` / `volume_24h_max` (the reference describes the volume thresholds as **24 hour USD volume**).
+- **Client-only:** name/symbol substring and listed-after (UTC) date on `date_added` for the current page. With a listed-after date set, Search also sends `sort=date_added` (per the same reference) when your sort was not already “Date added”, so pages are ordered by listing time.
 
 ## Scripts
 

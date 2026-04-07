@@ -13,18 +13,12 @@ import {
   defaultCsvFilename,
   downloadCsvFile,
 } from './utils/csvExport'
+import { buildListingsLatestParams } from './utils/buildListingsLatestParams'
 import { getStoredApiKey } from './utils/apiKeyStorage'
 import { filterListings } from './utils/filterListings'
 import { type TableSortKey, sortCmcListings } from './utils/sortListings'
 import './App.css'
 import axios from 'axios'
-
-function parseOptNumber(s: string): number | undefined {
-  const t = s.trim()
-  if (t === '') return undefined
-  const n = Number(t)
-  return Number.isFinite(n) ? n : undefined
-}
 
 interface TableSortState {
   key: TableSortKey
@@ -61,25 +55,13 @@ function App() {
   const clientOpts = useMemo(
     () => ({
       text: filters.text,
-      minMcap: parseOptNumber(filters.minMcap),
-      maxMcap: parseOptNumber(filters.maxMcap),
-      minVol: parseOptNumber(filters.minVol),
-      maxVol: parseOptNumber(filters.maxVol),
       convert: filters.convert,
       minDateAdded:
         filters.minDateAdded.trim() === ''
           ? undefined
           : filters.minDateAdded.trim(),
     }),
-    [
-      filters.text,
-      filters.minMcap,
-      filters.maxMcap,
-      filters.minVol,
-      filters.maxVol,
-      filters.convert,
-      filters.minDateAdded,
-    ],
+    [filters.text, filters.convert, filters.minDateAdded],
   )
 
   const filteredRows = useMemo(
@@ -115,17 +97,10 @@ function App() {
       setUrlsById({})
       setInfoLoadingById({})
 
-      const start = (pageNum - 1) * filters.limit + 1
-
       try {
-        const res = await fetchListingsLatest({
-          start,
-          limit: filters.limit,
-          sort: filters.sort,
-          sort_dir: filters.sort_dir,
-          convert: filters.convert,
-          cryptocurrency_type: filters.cryptocurrency_type,
-        })
+        const res = await fetchListingsLatest(
+          buildListingsLatestParams(filters, pageNum),
+        )
         if (res.status.error_code !== 0) {
           setError(
             res.status.error_message ??
